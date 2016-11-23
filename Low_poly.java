@@ -23,7 +23,10 @@ public class Low_poly {
 		number_of_points = p;
 	}
 
-
+	/** - Loads the file input in arguments, as well as a number that identifies how many points to be selected.
+	  * - Then uses priority points file and triangulation file to finish low_poly process and the draws the image
+	  * - back to output.
+	**/
 	public static void main(String[] args) {
 		BufferedImage image;
 		int number_of_points;
