@@ -6,12 +6,11 @@
  * 
 **/
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.awt.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.Graphics;
-
 
 public class Low_poly {
 
@@ -27,6 +26,7 @@ public class Low_poly {
 	  * - Then uses priority points file and triangulation file to finish low_poly process and the draws the image
 	  * - back to output.
 	**/
+	public 
 	public static void main(String[] args) {
 		BufferedImage image;
 		int number_of_points;
@@ -46,8 +46,9 @@ public class Low_poly {
 		} else {
 			throw new IllegalArgumentException("Incorrect number of arguments");			
 		}
-		Graphics g = new Graphics();
-		g.drawImage(image,0,0,null);
+
+		Low_poly m = new Low_poly(image, number_of_points);
+
 	}
 
 }

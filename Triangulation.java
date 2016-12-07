@@ -6,8 +6,8 @@
  * 
 **/
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.awt.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 
