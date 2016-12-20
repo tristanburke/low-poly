@@ -16,17 +16,38 @@ public class Low_poly {
 
 	BufferedImage image;
 	int number_of_points;
+	int width;
+	int height
+	int[][] pixels;
 
 	public Low_poly(BufferedImage i, int p) {
 		image = i;
 		number_of_points = p;
-	}
 
+		//convert buffered image into double array of pixels. 
+		width = i.getWidth();
+    	height = i.getHeight();
+      	pixels = new int[height][width];
+
+      	for (int row = 0; row < height; row++) {
+         	for (int col = 0; col < width; col++) {
+            	pixels[row][col] = i.getRGB(col, row);
+         	}
+      	}
+	}
+	//Use Priority Points class to figure out PP
+	public priority_points() {
+
+	}
+	//Use Triangulate class to triangulate
+	public triangulate() {
+
+	}
 	/** - Loads the file input in arguments, as well as a number that identifies how many points to be selected.
+	  * - Converts the buffered image into double array of pixels. 
 	  * - Then uses priority points file and triangulation file to finish low_poly process and the draws the image
 	  * - back to output.
 	**/
-	public 
 	public static void main(String[] args) {
 		BufferedImage image;
 		int number_of_points;
@@ -37,7 +58,7 @@ public class Low_poly {
 			} catch (IOException e) {
 			}
 			number_of_points = Integer.parseInt(args[1]);
-		} else  if (args.length == 1) {
+		} else if (args.length == 1) {
 			try {
 				image = ImageIO.read(new File(args[0]));
 			} catch (IOException e) {
@@ -48,7 +69,6 @@ public class Low_poly {
 		}
 
 		Low_poly m = new Low_poly(image, number_of_points);
-
 	}
 
 }
