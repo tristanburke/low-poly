@@ -17,7 +17,7 @@ public class Low_poly {
 	BufferedImage image;
 	int number_of_points;
 	int width;
-	int height
+	int height;
 	int[][] pixels;
 
 	public Low_poly(BufferedImage i, int p) {
@@ -34,14 +34,7 @@ public class Low_poly {
             	pixels[row][col] = i.getRGB(col, row);
          	}
       	}
-	}
-	//Use Priority Points class to figure out PP
-	public priority_points() {
-
-	}
-	//Use Triangulate class to triangulate
-	public triangulate() {
-
+      	System.out.print(pixels.length + ", " + pixels[0].length);
 	}
 	/** - Loads the file input in arguments, as well as a number that identifies how many points to be selected.
 	  * - Converts the buffered image into double array of pixels. 
@@ -49,7 +42,7 @@ public class Low_poly {
 	  * - back to output.
 	**/
 	public static void main(String[] args) {
-		BufferedImage image;
+		BufferedImage image = new BufferedImage(256, 256, BufferedImage.TYPE_INT_RGB);
 		int number_of_points;
 
 		if (args.length == 2) {
@@ -65,10 +58,8 @@ public class Low_poly {
 			}
 			number_of_points = 50;
 		} else {
-			throw new IllegalArgumentException("Incorrect number of arguments");			
+			throw new IllegalArgumentException("Incorrect number of arguments");	
 		}
-
 		Low_poly m = new Low_poly(image, number_of_points);
 	}
-
 }
