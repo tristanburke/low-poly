@@ -25,11 +25,13 @@ public class Priority_Points {
 
 
 	public int[][] triangulate(int[][] pixels, int number_of_points) {
-		Point[][] points = new Point[pixels.length][pixels[0].length];
 
-		for (i = 0; i < pixels.length; i++) {
-			for (j = 0; j < pixels[0].length; j++) {
-				int current = pixels[i][j]
+		Comparator<Point> comp = new PointComparator();
+		PriorityQueue<Point> queue = new PriorityQueue<Point>(comp, number_of_points);
+
+		for (int i = 0; i < pixels.length; i++) {
+			for (int j = 0; j < pixels[0].length; j++) {
+				int current = pixels[i][j];
 				int above = 0;
 				int below = 0;
 				int left = 0;
@@ -46,36 +48,34 @@ public class Priority_Points {
 				if (j != pixels[0].length) {
 					right = Math.abs(current - pixels[i][j+1]);
 				}
-				int contrast = Math.max(above,below,right,left);
+				int contrast = Math.max(Math.max(above,below),Math.max(right,left));
 				Point n = new Point(i, j, contrast);
-				points[i][j] = n;
+				queue.add(n);
 			}
 		}
-		Comparator<Point> comp = new PointComparator();
-		PriorityQueue<Point> queue = new PriorityQueue<Point>(comp, number_of_points);
-
-
 
 	}
 
 	public class Point {
-		int row;
-		int col;
-		int contrast;
+		public int row;
+		public int col;
+		public int contrast;
+
 		public Point(int a, int b, int c) {
 			row = a;
 			col = b;
 			contrast = c;
 		}
+
 	}
 
 	public class PointComparator implements Comparator<Point> {
     	@Override
     	public int compare(Point a, Point b) {
 
-        	if (x.length() < y.length()) {	
+        	if (a.contrast < b.contrast) {	
             	return -1;
-        	} if (x.length() > y.length()) {
+        	} if (a.contrast > b.contrast) {
             	return 1;
         	}
         	return 0;
