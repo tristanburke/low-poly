@@ -2,7 +2,7 @@
  * Main - Loads image, creates and returns low poly image
  * 
  * @author 	Tristan Burke
- * @version	1.0 - November 22, 2016
+ * @version	1.2 - December 20, 2016
  * 
 **/
 
