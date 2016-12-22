@@ -5,12 +5,15 @@
  * @version	1.2 - December 20, 2016
  * 
 **/
+package low_poly;
 
 import java.io.*;
 import java.awt.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.Graphics;
+import java.util.PriorityQueue;
+import java.util.Comparator; 
 
 public class Low_poly {
 
@@ -19,15 +22,18 @@ public class Low_poly {
 	int width;
 	int height;
 	int[][] pixels;
+	Priority_Points priority_points;
 
 	public Low_poly(BufferedImage i, int p) {
 		image = i;
 		number_of_points = p;
+		priority_points = new Priority_Points();
 
 		//convert buffered image into double array of pixels. 
 		width = i.getWidth();
     	height = i.getHeight();
       	pixels = new int[height][width];
+
 
       	for (int row = 0; row < height; row++) {
          	for (int col = 0; col < width; col++) {
@@ -35,6 +41,11 @@ public class Low_poly {
          	}
       	}
       	System.out.print(pixels.length + ", " + pixels[0].length);
+
+      	int[][] points = priority_points.triangulate(pixels, number_of_points);
+      	for (int[] arr : points) {
+      		System.out.print(arr[0] + ", " + arr[1]);
+      	}
 	}
 	/** - Loads the file input in arguments, as well as a number that identifies how many points to be selected.
 	  * - Converts the buffered image into double array of pixels. 

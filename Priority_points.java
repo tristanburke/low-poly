@@ -6,6 +6,8 @@
  * 
 **/
 
+package low_poly;
+
 import java.io.*;
 import java.awt.*;
 import javax.imageio.ImageIO;
@@ -23,11 +25,13 @@ import java.util.Comparator;
 
 public class Priority_Points {
 
+	public Priority_Points() {
+	}
 
 	public int[][] triangulate(int[][] pixels, int number_of_points) {
 
 		Comparator<Point> comp = new PointComparator();
-		PriorityQueue<Point> queue = new PriorityQueue<Point>(comp, number_of_points);
+		PriorityQueue<Point> queue = new PriorityQueue<Point>(number_of_points, comp);
 
 		for (int i = 0; i < pixels.length; i++) {
 			for (int j = 0; j < pixels[0].length; j++) {
@@ -53,7 +57,14 @@ public class Priority_Points {
 				queue.add(n);
 			}
 		}
-
+		//Convert the priority points into an int[][] where each elemenet in arra
+		Point[] points = ((Point[]) queue.toArray());
+		int[][] ret = new int[points.length][2];
+		for (int i = 0; i < points.length; i++) {
+			ret[i][0] = points[i].row;
+			ret[i][1] = points[i].col;
+		}
+		return ret;
 	}
 
 	public class Point {

@@ -6,6 +6,8 @@
  * 
 **/
 
+package low_poly;
+
 import java.io.*;
 import java.awt.*;
 import javax.imageio.ImageIO;
