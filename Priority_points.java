@@ -43,22 +43,25 @@ public class Priority_Points {
 				if (i != 0) {
 					above = Math.abs(current - pixels[i-1][j]);
 				}
-				if (i != pixels.length) {
+				if (i < pixels.length - 1) {
 					below = Math.abs(current - pixels[i+1][j]);
 				}
 				if (j != 0) {
 					left = Math.abs(current - pixels[i][j-1]);
 				}
-				if (j != pixels[0].length) {
+				if (j < pixels[0].length - 1) {
 					right = Math.abs(current - pixels[i][j+1]);
 				}
 				int contrast = Math.max(Math.max(above,below),Math.max(right,left));
 				Point n = new Point(i, j, contrast);
 				queue.add(n);
+				if (queue.size() > number_of_points) {
+					queue.poll();
+				}
 			}
 		}
 		//Convert the priority points into an int[][] where each elemenet in arra
-		Point[] points = ((Point[]) queue.toArray());
+		Point[] points = queue.toArray(new Point[0]);
 		int[][] ret = new int[points.length][2];
 		for (int i = 0; i < points.length; i++) {
 			ret[i][0] = points[i].row;
@@ -86,7 +89,8 @@ public class Priority_Points {
 
         	if (a.contrast < b.contrast) {	
             	return -1;
-        	} if (a.contrast > b.contrast) {
+			}
+			if (a.contrast > b.contrast) {
             	return 1;
         	}
         	return 0;
