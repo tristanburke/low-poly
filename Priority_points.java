@@ -30,31 +30,45 @@ public class Priority_Points {
 
 	public int[][] triangulate(int[][] pixels, int number_of_points) {
 
+		//Create Priority Queue to hold points
 		Comparator<Point> comp = new PointComparator();
 		PriorityQueue<Point> queue = new PriorityQueue<Point>(number_of_points, comp);
 
-		for (int i = 0; i < pixels.length; i++) {
-			for (int j = 0; j < pixels[0].length; j++) {
-				int current = pixels[i][j];
-				int above = 0;
-				int below = 0;
-				int left = 0;
-				int right = 0;
-				if (i != 0) {
-					above = Math.abs(current - pixels[i-1][j]);
+		//Calculate Correct Block Size based off of the number of points desired, and image size. 
+
+		//Break Image into Blocks. Find point of highest 
+		for (int i = 0; i < pixels.length; i = i + 20) {
+			for (int j = 0; j < pixels[0].length; j = j + 20) {
+
+				int max_contrast = 0;
+				Point max_point = new Point(0,0,0);
+				//Iterate through Block to find Best Pixel
+				for (int inner_i = i; inner_i < i + 20; inner_i++) {
+					for (int inner_j = j; inner_j < j + 20; inner_j++) {
+						int current = pixels[i][j];
+						int above = 0;
+						int below = 0;
+						int left = 0;
+						int right = 0;
+						if (i != 0) {
+							above = Math.abs(current - pixels[i-1][j]);
+						}
+						if (i < pixels.length - 1) {
+							below = Math.abs(current - pixels[i+1][j]);
+						}
+						if (j != 0) {
+							left = Math.abs(current - pixels[i][j-1]);
+						}
+						if (j < pixels[0].length - 1) {
+							right = Math.abs(current - pixels[i][j+1]);
+						}
+						int contrast = Math.max(Math.max(above,below),Math.max(right,left));
+						if (contrast > max_contrast) {
+							max_point = new Point(i, j, contrast);
+						}
+					}
 				}
-				if (i < pixels.length - 1) {
-					below = Math.abs(current - pixels[i+1][j]);
-				}
-				if (j != 0) {
-					left = Math.abs(current - pixels[i][j-1]);
-				}
-				if (j < pixels[0].length - 1) {
-					right = Math.abs(current - pixels[i][j+1]);
-				}
-				int contrast = Math.max(Math.max(above,below),Math.max(right,left));
-				Point n = new Point(i, j, contrast);
-				queue.add(n);
+				queue.add(max_point);
 				if (queue.size() > number_of_points) {
 					queue.poll();
 				}

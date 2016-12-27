@@ -53,6 +53,18 @@ public class Low_poly {
       		int x = points[i][1];
       		int y = points[i][0];
       		finished_image.setRGB(x, y, 16711680);
+      		if (x < width-1) {
+      			finished_image.setRGB(x+1, y, 16711680);
+      		}
+      		if (x != 0) {
+      			finished_image.setRGB(x-1, y, 16711680);
+      		}
+      		if (y < height-1) {
+      			finished_image.setRGB(x, y+1, 16711680);
+      		}	
+      		if (y != 0) {
+      			finished_image.setRGB(x, y-1, 16711680);
+      		}
       	}
       	save(finished_image, name);
 	}
