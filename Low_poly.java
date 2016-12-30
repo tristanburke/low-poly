@@ -47,8 +47,9 @@ public class Low_poly {
       	int[][] points = priority_points.triangulate(pixels, number_of_points);
       	System.out.println("Triangulate return length: " + points.length);
 
-      	//Draw Returned Image
+      	//Draw Finished Image
       	BufferedImage finished_image = copy(image);
+      	//Draw In priority Points
       	for (int i = 0; i < points.length; i++) {
       		int x = points[i][1];
       		int y = points[i][0];
@@ -66,6 +67,7 @@ public class Low_poly {
       			finished_image.setRGB(x, y-1, 16711680);
       		}
       	}
+      	//Save Image to new file 
       	save(finished_image, name);
 	}
 	public static BufferedImage copy(BufferedImage source) {
