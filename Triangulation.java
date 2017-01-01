@@ -62,37 +62,38 @@ public class Triangulation {
 	//####### METHODS ########//
 
 	//Form Triangles
-	public Triangle[] triangulate() {
+	public void triangulate() {
 		//Create supertriangle and add it to the triangle data structure
 		//For each vertex
 		for (int i = 0; i < points.length; i++) {
 			//Add vertex
 			add_vertex(points[i][0], points[i][1]);
 		}
-		//For each Triangle
-		for(){
-
-		}
+		//For each Triangle see if one or more vertices stem from supertriangles
 	}
 	//Add One Vertex to existing Delauney Triangulation, with array of Triangle
 	public void add_vertex(int x, int y) {
 		
 		Vertex p = new Vertex(x, y);
-		Arraylist<Triangle> t_copy = new Arraylist<Triangle>(triangles);
-		ArrayList<Edge> edgebuffer = new ArrayList<Edge>()
+		ArrayList<Triangle> t_copy = new ArrayList<Triangle>(triangles);
+		ArrayList<Edge> edgebuffer = new ArrayList<Edge>();
 		
 		for (Triangle t : t_copy) {
 			Vertex a;
 			Vertex b;
 			Vertex c;
 			//Sort into clockwise order
-			if (t.a.x < t.b.x && t.a.x < t.c.x) {
+			int order  = (t.b.y - t.a.y)*(t.c.x - t.b.x)-(t.b.x - t.a.x)*(t.c.y - t.b.y);
+			if (order > 0 ) {
 				a = t.a;
-			} else if (t.b.x < t.a.x && t.b.x < t.c.x) {
-				a = t.b;
+				b = t.b;
+				c = t.c;
 			} else {
 				a = t.c;
+				b = t.b;
+				c = t.c;
 			}
+			
 			if (within_triangle(a,b,c,p)) {
 				//store Triangles's edges in edgebuffer
 				edgebuffer.add(new Edge(t.a, t.b));
@@ -103,7 +104,7 @@ public class Triangulation {
 			}
 		}
 		//remove all double edges from edgebuffer, keeping only the unique ones
-		Arraylist<Edge> e_copy = new Arraylist<Edge>(edgebuffer);
+		ArrayList<Edge> e_copy = new ArrayList<Edge>(edgebuffer);
 		for (Edge e : e_copy) {
 			//for a new triangle between edge and vertex
 		}
