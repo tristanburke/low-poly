@@ -2,7 +2,7 @@
  * Finds Priority Points of image and returns them in an Array
  * 
  * @author 	Tristan Burke
- * @version	1.2 - December 20, 2016
+ * @version	1.3 - December 20, 2016
  * 
 **/
 
@@ -37,15 +37,17 @@ public class Priority_Points {
 		//Calculate Correct Block Size based off of the number of points desired, and image size. 
 
 		//Break Image into Blocks. Find point of highest 
-		for (int i = 0; i < pixels.length; i = i + 20) {
-			for (int j = 0; j < pixels[0].length; j = j + 20) {
+		int wb = (int) pixels.length / 12;
+		int hb = (int) pixels[0].length / 12;
+		for (int i = 0; i < pixels.length; i = i + wb) {
+			for (int j = 0; j < pixels[0].length; j = j + hb) {
 
 				int max_contrast = 0;
 				Point max_point = new Point(0,0,0);
 				//Iterate through Block to find Best Pixel
-				for (int inner_i = i; inner_i < i + 20; inner_i++) {
-					for (int inner_j = j; inner_j < j + 20; inner_j++) {
-						int current = pixels[i][j];
+				for (int inner_i = i; inner_i < i + wb && inner_i < pixels.length; inner_i++) {
+					for (int inner_j = j; inner_j < j + wb && inner_j < pixels[0].length; inner_j++) {
+						int current = pixels[inner_i][inner_j];
 						int above = 0;
 						int below = 0;
 						int left = 0;
@@ -64,7 +66,8 @@ public class Priority_Points {
 						}
 						int contrast = Math.max(Math.max(above,below),Math.max(right,left));
 						if (contrast > max_contrast) {
-							max_point = new Point(i, j, contrast);
+							max_contrast = contrast;
+							max_point = new Point(inner_i, inner_j, contrast);
 						}
 					}
 				}

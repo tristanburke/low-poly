@@ -2,7 +2,7 @@
  * Main - Loads image, creates and returns low poly image
  * 
  * @author 	Tristan Burke
- * @version	1.2 - December 20, 2016
+ * @version	1.3 - Jan 1, 2016
  * 
 **/
 package low_poly;
@@ -14,6 +14,7 @@ import javax.imageio.*;
 import javax.swing.*;
 import java.util.PriorityQueue;
 import java.util.Comparator; 
+import java.util.ArrayList;
 
 public class Low_poly {
 
@@ -42,33 +43,75 @@ public class Low_poly {
             	pixels[row][col] = img.getRGB(col, row);
          	}
       	}
-      	System.out.println("Image Width: " + pixels.length + ", " + pixels[0].length);
+      	System.out.println("Image Width: " + width);
+      	System.out.println("Image Height: " + height);
 
       	int[][] points = priority_points.triangulate(pixels, number_of_points);
-      	System.out.println("Triangulate return length: " + points.length);
-
-      	//Draw Finished Image
+      	System.out.println("Number of Points: " + points.length);
+      	
+      	//Test Priority Points
       	BufferedImage finished_image = copy(image);
-      	//Draw In priority Points
       	for (int i = 0; i < points.length; i++) {
       		int x = points[i][1];
       		int y = points[i][0];
-      		finished_image.setRGB(x, y, 16711680);
-      		if (x < width-1) {
-      			finished_image.setRGB(x+1, y, 16711680);
-      		}
-      		if (x != 0) {
-      			finished_image.setRGB(x-1, y, 16711680);
-      		}
-      		if (y < height-1) {
-      			finished_image.setRGB(x, y+1, 16711680);
-      		}	
-      		if (y != 0) {
-      			finished_image.setRGB(x, y-1, 16711680);
-      		}
+      		color_test(finished_image, x, y, 16711680, width, height);
       	}
-      	//Save Image to new file 
-      	save(finished_image, name);
+     	save(finished_image, "Points");
+      	
+      	// Triangulate
+
+        //Testing set of points 
+        int[][] practice_points = {{0,0},{100,100},{200,200},{0,100},{50, 250},{100,70},{300,150},{150,0}};
+      	Triangulation t = new Triangulation(points, width, height);
+      	ArrayList<Triangulation.Triangle> triangles = t.triangulate();
+
+     	//Test triangles 
+     	System.out.println("Number of Triangles: " + triangles.size());
+     	BufferedImage t_image = copy(image);
+     	Graphics2D g2d = t_image.createGraphics();
+     	g2d.setColor(Color.BLACK);
+        BasicStroke bs = new BasicStroke(2);
+        g2d.setStroke(bs);
+
+      	for (int i = 0; i < triangles.size(); i++) {
+      		Triangulation.Triangle current = triangles.get(i);
+      		int ax = current.a.x;
+      		int ay = current.a.y;
+      		int bx = current.b.x;
+      		int by = current.b.y;  
+      		int cx = current.c.x;
+      		int cy = current.c.y;
+      		System.out.println("Triangle Number " + i + ":");
+      		System.out.println("(" + ax + ", " + ay + ")");
+      		System.out.println("(" + bx + ", " + by + ")");
+      		System.out.println("(" + cx + ", " + cy + ")");
+      		//color_test(t_image, ax, ay, 16711680 + 10*i, width, height);
+      		//color_test(t_image, bx, by, 16711680 + 10*i, width, height); 
+      		//color_test(t_image, cx, cy, 16711680 + 10*i, width, height);  
+
+      		g2d.drawLine(ax, ay, bx, by);
+      		g2d.drawLine(bx, by, cx, cy);
+      		g2d.drawLine(cx, cy, ax, ay);
+   			
+      	}
+      	save(t_image , "Triangles");
+
+      	//Draw Finished Image
+	}
+	public static void color_test(BufferedImage source, int x, int y, int color, int width, int height) {
+		source.setRGB(x, y, color);
+  		if (x < width-1) {
+  			source.setRGB(x+1, y, color);
+  		}
+  		if (x != 0) {
+  			source.setRGB(x-1, y, color);
+  		}
+  		if (y < height-1) {
+  			source.setRGB(x, y+1, color);
+  		}	
+  		if (y != 0) {
+  			source.setRGB(x, y-1, color);
+  		}
 	}
 	public static BufferedImage copy(BufferedImage source) {
  		ColorModel cm = source.getColorModel();

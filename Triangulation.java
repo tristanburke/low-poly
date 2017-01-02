@@ -2,7 +2,7 @@
  * Takes a set of priority points and creates a triangulation from points and returns image
  * 
  * @author 	Tristan Burke
- * @version	1.0 - November 22, 2016
+ * @version	1.3 - Jan 1, 2016
  * 
 **/
 
@@ -13,15 +13,19 @@ import java.awt.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-
+	
 public class Triangulation {
 
 	ArrayList<Triangle> triangles;
 	int[][] points;
+	int width;
+	int height;
 
 	//Intialize points and create data structure to hold Triangles. 
-	public Triangulation(int[][] p){
+	public Triangulation(int[][] p, int w, int h){
 		points = p;
+		width = w;
+		height = h;
 		triangles = new ArrayList<Triangle>();
 	}
 
@@ -58,40 +62,53 @@ public class Triangulation {
 			b = b1;
 		}
 	}
-	
+
 	//####### METHODS ########//
 
 	//Form Triangles
-	public void triangulate() {
+	public ArrayList<Triangle> triangulate() {
 		//Create supertriangle and add it to the triangle data structure
+		Vertex a = new Vertex(0,0);
+		Vertex b = new Vertex(0, height-1);
+		Vertex c = new Vertex(width-1, 0);
+		triangles.add(new Triangle(a,b,c));
 		//For each vertex
 		for (int i = 0; i < points.length; i++) {
 			//Add vertex
-			add_vertex(points[i][0], points[i][1]);
+			add_vertex(points[i][1], points[i][0]);
 		}
+		
 		//For each Triangle see if one or more vertices stem from supertriangles
+		ArrayList<Triangle> t_copy = new ArrayList<Triangle>(triangles);
+		for (Triangle t: t_copy) {
+			if (vertex_e(t.a,a) || vertex_e(t.b,a) || vertex_e(t.c,a)
+				|| vertex_e(t.a, b) || vertex_e(t.b, b) || vertex_e(t.c, b) 
+				|| vertex_e(t.a, c) || vertex_e(t.b, c) || vertex_e(t.c, c)){
+				triangles.remove(t);
+			}
+		}
+		return triangles;
 	}
 	//Add One Vertex to existing Delauney Triangulation, with array of Triangle
 	public void add_vertex(int x, int y) {
-		
+
+
 		Vertex p = new Vertex(x, y);
 		ArrayList<Triangle> t_copy = new ArrayList<Triangle>(triangles);
 		ArrayList<Edge> edgebuffer = new ArrayList<Edge>();
 		
 		for (Triangle t : t_copy) {
 			Vertex a;
-			Vertex b;
+			Vertex b = t.b;
 			Vertex c;
-			//Sort into clockwise order
-			int order  = (t.b.y - t.a.y)*(t.c.x - t.b.x)-(t.b.x - t.a.x)*(t.c.y - t.b.y);
-			if (order > 0 ) {
+			//Sort into counterclockwise order
+			int order  = (t.b.y - t.a.y)*(t.c.x - t.b.x)-(t.c.y-t.b.y)*(t.b.x - t.a.x);
+			if (order < 0 ) {
 				a = t.a;
-				b = t.b;
 				c = t.c;
 			} else {
 				a = t.c;
-				b = t.b;
-				c = t.c;
+				c = t.a;
 			}
 			
 			if (within_triangle(a,b,c,p)) {
@@ -104,21 +121,41 @@ public class Triangulation {
 			}
 		}
 		//remove all double edges from edgebuffer, keeping only the unique ones
-		ArrayList<Edge> e_copy = new ArrayList<Edge>(edgebuffer);
-		for (Edge e : e_copy) {
-			//for a new triangle between edge and vertex
+		ArrayList<Edge> e_unique = new ArrayList<Edge>();
+		for (int i = 0; i < edgebuffer.size(); i++) {
+			Boolean unique = true;
+			Edge current = edgebuffer.get(i);
+			for (int j = 0; j < edgebuffer.size(); j++) {
+				if (j != i) {
+					Edge other = edgebuffer.get(j);
+					if (edge_e(other, current)) {
+						unique = false;
+						break;
+					}
+				}
+			}
+			if (unique) {
+				e_unique.add(current);
+			}
 		}
-		for (Edge e : edgebuffer) {
-			return;
+		//for a new triangle between edge and vertex
+		for (Edge e : e_unique) {
+			Triangle current = new Triangle(e.a, e.b, p);
+			triangles.add(current);
 		}
+	}
+	public boolean vertex_e(Vertex a, Vertex b) {
+		return (a.x == b.x && a.y == b.y);
+	}
+	public boolean edge_e(Edge a, Edge b) {
+		return ((vertex_e(a.a, b.a) && vertex_e(a.b, b.b)) || (vertex_e(a.b, b.a) && vertex_e(a.a, b.b)));
 	}
 	// Determines whether or not point D lies within the triangle formed be A, B, C
 	// This is done by calculating the determinant of a specific matric defined by
 	// A,B,C, and D's x and y positions. If this determinant is > 0, it lies within.
 	// Futhermore, A, B, and C must be ordered counter-clockwise
-	
 	public boolean within_triangle(Vertex a1, Vertex b1, Vertex c1, Vertex d) {
-		// Assume a1, b1, and c1 are passed in in clockwise
+		// Assume a1, b1, and c1 are passed in counterclockwise
 		// Matrix Elements
 		int a11 = a1.x - d.x;
 		int a21 = b1.x - d.x;
@@ -130,8 +167,7 @@ public class Triangulation {
 		double a23 = (Math.pow(b1.x, 2) - Math.pow(d.x, 2)) + (Math.pow(b1.y, 2) - Math.pow(d.y, 2));
 		double a33 = (Math.pow(c1.x, 2) - Math.pow(d.x, 2)) + (Math.pow(c1.y, 2) - Math.pow(d.y, 2));
 		// Calculate Determinant 
-		double det = a11*((a22*a33) - (a23*a32)) - a12*((a21*a33) - (a23*a31)) + a13*((a21*a32) - (a22*a31)); 
-		
+		double det = a11*((a22*a33)-(a23*a32)) - a12*((a21*a33)-(a23*a31)) + a13*((a21*a32)-(a22*a31)); 
 		return (det > 0);
 	}
 }
