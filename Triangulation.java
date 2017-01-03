@@ -68,9 +68,9 @@ public class Triangulation {
 	//Form Triangles
 	public ArrayList<Triangle> triangulate() {
 		//Create supertriangle and add it to the triangle data structure
-		Vertex a = new Vertex(0,0);
-		Vertex b = new Vertex(0, height-1);
-		Vertex c = new Vertex(width-1, 0);
+		Vertex a = new Vertex(-width,0);
+		Vertex b = new Vertex(width, 0);
+		Vertex c = new Vertex(0, 2*height);
 		triangles.add(new Triangle(a,b,c));
 		//For each vertex
 		for (int i = 0; i < points.length; i++) {
@@ -78,7 +78,7 @@ public class Triangulation {
 			add_vertex(points[i][1], points[i][0]);
 		}
 		
-		//For each Triangle see if one or more vertices stem from supertriangles
+		// For each Triangle see if one or more vertices stem from supertriangles
 		ArrayList<Triangle> t_copy = new ArrayList<Triangle>(triangles);
 		for (Triangle t: t_copy) {
 			if (vertex_e(t.a,a) || vertex_e(t.b,a) || vertex_e(t.c,a)
@@ -89,6 +89,8 @@ public class Triangulation {
 		}
 		return triangles;
 	}
+	
+
 	//Add One Vertex to existing Delauney Triangulation, with array of Triangle
 	public void add_vertex(int x, int y) {
 
@@ -97,12 +99,16 @@ public class Triangulation {
 		ArrayList<Triangle> t_copy = new ArrayList<Triangle>(triangles);
 		ArrayList<Edge> edgebuffer = new ArrayList<Edge>();
 		
+		System.out.println("Size before: " + triangles.size());
 		for (Triangle t : t_copy) {
 			Vertex a;
 			Vertex b = t.b;
 			Vertex c;
 			//Sort into counterclockwise order
 			int order  = (t.b.y - t.a.y)*(t.c.x - t.b.x)-(t.c.y-t.b.y)*(t.b.x - t.a.x);
+			if (order == 0) {
+				break;
+			}
 			if (order < 0 ) {
 				a = t.a;
 				c = t.c;
@@ -110,9 +116,9 @@ public class Triangulation {
 				a = t.c;
 				c = t.a;
 			}
-			
 			if (within_triangle(a,b,c,p)) {
 				//store Triangles's edges in edgebuffer
+				System.out.println("test");
 				edgebuffer.add(new Edge(t.a, t.b));
 				edgebuffer.add(new Edge(t.b, t.c));
 				edgebuffer.add(new Edge(t.c, t.a));
@@ -120,6 +126,7 @@ public class Triangulation {
 				triangles.remove(t);
 			}
 		}
+		System.out.println("Size after: " + triangles.size());
 		//remove all double edges from edgebuffer, keeping only the unique ones
 		ArrayList<Edge> e_unique = new ArrayList<Edge>();
 		for (int i = 0; i < edgebuffer.size(); i++) {
@@ -143,6 +150,19 @@ public class Triangulation {
 			Triangle current = new Triangle(e.a, e.b, p);
 			triangles.add(current);
 		}
+		System.out.println("Number of Triangles added: " + e_unique.size());
+	}
+	public void test() {
+		// Vertex a = new Vertex(0,0);
+		// Vertex b = new Vertex(0,10);
+		// Vertex c = new Vertex(10,0);
+		// Vertex d = new Vertex(25,25);
+		// boolean test = within_triangle(c,b,a,d);
+		// if (test) {
+		// 	System.out.println("fail");
+		// } else {
+		// 	System.out.println("not");
+		// }
 	}
 	public boolean vertex_e(Vertex a, Vertex b) {
 		return (a.x == b.x && a.y == b.y);
