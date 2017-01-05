@@ -62,7 +62,7 @@ public class Low_poly {
 
         //Testing set of points 
         int[][] practice_points = {{0,0},{100,100},{200,200},{0,100},{50, 250},{100,70},{300,150},{150,0},{40,450},{500,60},{370,250},{350,240},{400,500},{500,600},{2000,1000},{1500,1200},{2300,450}};
-      	Triangulation t = new Triangulation(practice_points, width, height);
+      	Triangulation t = new Triangulation(practice_points,height);
       	ArrayList<Triangulation.Triangle> triangles = t.triangulate();
 
      	//Test triangles 
@@ -76,11 +76,11 @@ public class Low_poly {
       	for (int i = 0; i < triangles.size(); i++) {
       		Triangulation.Triangle current = triangles.get(i);
       		int ax = current.a.x;
-      		int ay = current.a.y;
+      		int ay = -current.a.y + height - 1;
       		int bx = current.b.x;
-      		int by = current.b.y;  
+      		int by = -current.b.y + height - 1;;  
       		int cx = current.c.x;
-      		int cy = current.c.y;
+      		int cy = -current.c.y + height - 1;;
 
       		//color_test(t_image, ax, ay, 16711680 + 10*i, width, height);
       		//color_test(t_image, bx, by, 16711680 + 10*i, width, height); 
