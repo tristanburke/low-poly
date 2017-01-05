@@ -46,7 +46,7 @@ public class Low_poly {
       	System.out.println("Image Width: " + width);
       	System.out.println("Image Height: " + height);
 
-      	int[][] points = priority_points.triangulate(pixels, number_of_points);
+      	int[][] points = priority_points.get_points(pixels, number_of_points);
       	System.out.println("Number of Points: " + points.length);
       	
       	//Test Priority Points
@@ -62,7 +62,7 @@ public class Low_poly {
 
         //Testing set of points 
         int[][] practice_points = {{0,0},{100,100},{200,200},{0,100},{50, 250},{100,70},{300,150},{150,0},{40,450},{500,60},{370,250},{350,240},{400,500},{500,600},{2000,1000},{1500,1200},{2300,450}};
-      	Triangulation t = new Triangulation(practice_points,height);
+      	Triangulation t = new Triangulation(points,height);
       	ArrayList<Triangulation.Triangle> triangles = t.triangulate();
 
      	//Test triangles 
@@ -80,11 +80,7 @@ public class Low_poly {
       		int bx = current.b.x;
       		int by = -current.b.y + height - 1;;  
       		int cx = current.c.x;
-      		int cy = -current.c.y + height - 1;;
-
-      		//color_test(t_image, ax, ay, 16711680 + 10*i, width, height);
-      		//color_test(t_image, bx, by, 16711680 + 10*i, width, height); 
-      		//color_test(t_image, cx, cy, 16711680 + 10*i, width, height);  
+      		int cy = -current.c.y + height - 1;;  
 
       		g2d.drawLine(ax, ay, bx, by);
       		g2d.drawLine(bx, by, cx, cy);
@@ -115,14 +111,6 @@ public class Low_poly {
  		boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
  		WritableRaster raster = source.copyData(null);
  		return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
-	}
-	public static void display(BufferedImage image) {
-		JFrame frame = new JFrame();
-		frame.getContentPane().setLayout(new FlowLayout());
-		frame.getContentPane().add(new JLabel(new ImageIcon(image)));
-		frame.pack();
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	public static void save(BufferedImage image, String name) {
 		try {

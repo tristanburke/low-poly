@@ -28,7 +28,7 @@ public class Priority_Points {
 	public Priority_Points() {
 	}
 
-	public int[][] triangulate(int[][] pixels, int number_of_points) {
+	public int[][] get_points(int[][] pixels, int number_of_points) {
 
 		//Create Priority Queue to hold points
 		Comparator<Point> comp = new PointComparator();

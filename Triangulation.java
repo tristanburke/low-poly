@@ -13,6 +13,7 @@ import java.awt.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Comparator; 
 import java.util.Collections;
 	
@@ -25,6 +26,7 @@ public class Triangulation {
 	ArrayList<Triangle> triangles;
 	ArrayList<Vertex> points;
 	ArrayList<Edge> perimeter;
+	HashMap<Edge,Triangle[]> edge_triangles;
 
 	Vertex seed;
 	Vertex c; 
@@ -130,10 +132,13 @@ public class Triangulation {
 		//Add intialize triangles and Edges 
 		Triangle first = new Triangle(seed,xk,xj);
 		triangles.add(first);
-		to_counterclockwise(first);		
-		perimeter.add(new Edge(first.a,first.b));
-		perimeter.add(new Edge(first.b,first.c));
-		perimeter.add(new Edge(first.c,first.a));
+		to_counterclockwise(first);	
+		Edge e_a = new Edge(first.a,first.b);
+		Edge e_b = new Edge(first.b,first.c);
+		Edge e_c = new Edge(first.c,first.a);	
+		perimeter.add(e_a);
+		perimeter.add(e_b);
+		perimeter.add(e_c);
 
 		//Find center of first triangles circumcirlce which will be used to sort remaining points
 		// c = circum_center(seed,xk,xj);
@@ -151,15 +156,6 @@ public class Triangulation {
 		}
 		return triangles;
 	}
-	
-	// System.out.println("seed is : (" + seed.x + ", " + seed.y + ")");
-	// 	for (Vertex v : points) {
-	// 		System.out.println("(" + v.x + ", " + v.y + ")");
-	// }
-	// System.out.println("Sorted..........");
-	// 	for (Vertex v : points) {
-	// 		System.out.println("(" + v.x + ", " + v.y + ")");
-	// }
 
 	//Add One Vertex to existing Delauney Triangulation, with array of Triangle
 	public void add_vertex(Vertex p) {
@@ -208,6 +204,24 @@ public class Triangulation {
 			}
 		}
 		System.out.println("Perimeter size after addition: " + perimeter.size());
+	}
+	//Delauney Flip Method
+	public void flip() {
+
+	}
+	public void flip_edge(Edge e) {
+		Triangle[] e_triangles = edge_triangles.get(e);
+		if (e_triangles.length < 2) {
+			return;
+		}
+		//Get two Triangles Edge is part of
+		Triangle tri_a = e_triangles[0];
+		Triangle tri_b = e_triangles[1];
+
+		//Find Vertices opposite the edge for each triangle
+		Vertex opp_a = new Vertex(-1, -1);
+		Vertex opp_b = new Vertex(-1, -1);
+
 	}
 	//Radius of the the circumcircle
 	public double circum_radius(Vertex a, Vertex b, Vertex c) {
