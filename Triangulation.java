@@ -25,13 +25,15 @@ public class Triangulation {
 	//Utilizing flip alogorithm
 	//With furter Inspiration from Alexander Pletzer's code on Triangulation in Python
 
-	ArrayList<Triangle> triangles;
+	HashMap<int,Triangle> triangles;
 	ArrayList<Vertex> points;
 	ArrayList<Edge> perimeter;
-	HashMap<Edge,Triangle[]> edge_triangles;
+	HashMap<Edge,int[]> edge_triangles;
 
 	Vertex seed;
 	Vertex c; 
+
+	int index;
 
 	//Intialize points and create data structure to hold Triangles. 
 	public Triangulation(int[][] p, int h){
@@ -186,7 +188,6 @@ public class Triangulation {
 			System.out.println(points.get(i).x + ", " + points.get(i).y);
 			add_vertex(points.get(i));
 		}
-		test_print_edge_to_triangles();
 		return triangles;
 	}
 	// public void test(){
@@ -228,6 +229,8 @@ public class Triangulation {
 				e_b_array[0] = n_tri;
 				edge_triangles.put(e_a, e_a_array);
 				edge_triangles.put(e_b, e_b_array);
+				System.out.println("Added: (" + e_a.a.x + ", " + e_a.a.y + ") ----> (" + e_a.b.x + ", " + e_a.b.y + ")");
+				System.out.println("Added: (" + e_b.a.x + ", " + e_b.a.y + ") ----> (" + e_b.b.x + ", " + e_b.b.y + ")");
 				//remove visible edge
 				to_be_removed.add(e);
 			}
@@ -279,10 +282,7 @@ public class Triangulation {
 		if (e_triangles == null) {
 			e_triangles = edge_triangles.get(new Edge(e.b, e.a));
 		}
-		if (e_triangles == null) {
-			return new_edges;
-		}
-		if (e_triangles[1] == null) {
+		if (e_triangles == null || e_triangles[0] == null || e_triangles[1] == null) {
 			return new_edges;
 		}
 		//Get two Triangles Edge is part of
@@ -316,7 +316,7 @@ public class Triangulation {
 			Triangle[] t = {n_tri_a,n_tri_b};
 			Edge flipped_e = new Edge(opp_a, opp_b);
 			edge_triangles.put(flipped_e,t);
-			System.out.println("Flipped: (" + flipped_e.a.x + ", " + flipped_e.a.y + ") ----> (" + flipped_e.b.x + ", " + flipped_e.b.y + ")");
+			System.out.println("Flip Added: (" + flipped_e.a.x + ", " + flipped_e.a.y + ") ----> (" + flipped_e.b.x + ", " + flipped_e.b.y + ")");
 
 			//Modify triangle's other edges' edge_triangles
 			ArrayList<Edge> six_edges = new ArrayList<Edge>();
@@ -328,15 +328,20 @@ public class Triangulation {
 			six_edges.add(new Edge(n_tri_b.c, n_tri_b.a));
 			for (int i = 0; i < 6; i++) {
 				Edge current = six_edges.get(i);
-				if (! edge_e(flipped_e,current)) {
+				if (!edge_e(flipped_e,current)) {
 					new_edges.add(current);
 					Triangle[] ts = edge_triangles.get(current);
 					if (ts == null) {
 						ts = edge_triangles.get(new Edge(current.b, current.a));
 					}
-					if (ts[0] == null) {
+					if (ts == null) {
 						System.out.println("No edge Triangle : " + current.a.x + ", " + current.a.y + " -> " + current.b.x + ", " + current.b.y);
-						test_print_edge_to_triangles();
+						System.out.println("New");
+						print_triangle(n_tri_a);
+						print_triangle(n_tri_b);
+						System.out.println("Old");
+						print_triangle(tri_a);
+						print_triangle(tri_b);
 					}
 					if (edge_in_triange(current, n_tri_a)) {
 						if (ts[0] == tri_a || ts[0] == tri_b) {
@@ -351,6 +356,7 @@ public class Triangulation {
 							ts[1] = n_tri_b;
 						}
 					}
+					edge_triangles.put(current,ts);
 				}
 			}
 			//Remove old triangles
