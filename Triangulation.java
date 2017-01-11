@@ -2,7 +2,7 @@
  * Takes a set of priority points and creates a triangulation from points and returns image
  * 
  * @author 	Tristan Burke
- * @version	1.3 - Jan 1, 2016
+ * @version	2.1 - Jan 5, 2016
  * 
 **/
 
@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Comparator; 
 import java.util.Collections;
+import java.util.Set;
+import java.util.HashSet;
 	
 public class Triangulation {
 	//Perform a triangulation using S-hull: a fast radial sweep-hull routine for Delaunay triangulation
@@ -38,12 +40,14 @@ public class Triangulation {
 		for (int i = 0; i < p.length; i++) {
 			points.add(new Vertex(p[i][1], (h - 1 - p[i][0])));
 		}
+		remove_duplicates();
 
 		//Initalize Variables
 		seed = new Vertex(-1,-1);
 		c = new Vertex(-1,-1);
 		triangles = new ArrayList<Triangle>();
 		perimeter = new ArrayList<Edge>();
+		edge_triangles = new HashMap<Edge, Triangle[]>();
 	}
 
 	//########## STRUCTURES ##########//
@@ -68,6 +72,11 @@ public class Triangulation {
 			x = a;
 			y = b;
 		}
+		@Override
+		public int hashCode(){
+			return x * 31 + y;
+		}
+
 	}
 	//Representing a triangle edge between two Vertices 
 	public class Edge{
@@ -77,6 +86,19 @@ public class Triangulation {
 		public Edge(Vertex a1, Vertex b1) {
 			a = a1;
 			b = b1;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			return edge_e(this, (Edge) o);
+		}
+		@Override
+		public int hashCode() {
+			int result = a != null ? a.hashCode() : 0;
+			result = 31 * result + (b != null ? b.hashCode() : 0);
+			return result;
 		}
 	}
 	public class C_comp implements Comparator<Vertex> {
@@ -131,14 +153,23 @@ public class Triangulation {
 		}
 		//Add intialize triangles and Edges 
 		Triangle first = new Triangle(seed,xk,xj);
-		triangles.add(first);
 		to_counterclockwise(first);	
+		triangles.add(first);
+
+		//Set inital perimeter
 		Edge e_a = new Edge(first.a,first.b);
 		Edge e_b = new Edge(first.b,first.c);
 		Edge e_c = new Edge(first.c,first.a);	
 		perimeter.add(e_a);
 		perimeter.add(e_b);
 		perimeter.add(e_c);
+
+		//Intialize their Edge-> triangles arrays
+		Triangle[] first_a = new Triangle[2];
+		first_a[0] = first;
+		edge_triangles.put(e_a, first_a);
+		edge_triangles.put(e_b, first_a.clone());
+		edge_triangles.put(e_c, first_a.clone());
 
 		//Find center of first triangles circumcirlce which will be used to sort remaining points
 		// c = circum_center(seed,xk,xj);
@@ -151,16 +182,23 @@ public class Triangulation {
 		points.remove(xj);
 
 		//Add Verticies to triangulation
-		for(int i = 0; i < points.size(); i++) {
+		for(int i = 0; i < 21; i++) {
+			System.out.println(points.get(i).x + ", " + points.get(i).y);
 			add_vertex(points.get(i));
 		}
+		test_print_edge_to_triangles();
 		return triangles;
 	}
-
+	// public void test(){
+	// 	Vertex a = new Vertex(0,0);
+	// 	Vertex b = new Vertex(10, 0);
+	// 	Vertex c = new Vertex(0,5);
+	// 	System.out.println(angle(a,b,c));
+	// 	System.out.println(angle(b,c,a));
+	// 	System.out.println(angle(c,a,b));
+	// }
 	//Add One Vertex to existing Delauney Triangulation, with array of Triangle
 	public void add_vertex(Vertex p) {
-
-		System.out.println("Perimeter size: " + perimeter.size());
 
 		ArrayList<Edge> to_be_added = new ArrayList<Edge>();
 		ArrayList<Edge> to_be_removed = new ArrayList<Edge>();
@@ -172,22 +210,33 @@ public class Triangulation {
 				to_counterclockwise(n_tri);
 				triangles.add(n_tri);
 
+				//update the already existing edge to have the new triangle;
+				Triangle[] array = edge_triangles.get(e);
+				array[1] = n_tri;
+				edge_triangles.put(e, array);
+
 				//update perimeter
 				Edge e_a = new Edge(n_tri.c, n_tri.a);
 				Edge e_b = new Edge(n_tri.b, n_tri.c);
 				to_be_added.add(e_a);
 				to_be_added.add(e_b);
 
+				//Intialize their triangles 
+				Triangle[] e_a_array = new Triangle[2];
+				Triangle[] e_b_array = new Triangle[2];
+				e_a_array[0] = n_tri;
+				e_b_array[0] = n_tri;
+				edge_triangles.put(e_a, e_a_array);
+				edge_triangles.put(e_b, e_b_array);
 				//remove visible edge
 				to_be_removed.add(e);
 			}
 		}
-		System.out.println("to be removed: " + to_be_removed.size());
+		//Remove Perimeter edges no longer on perimeter
 		for (Edge e : to_be_removed) {
 			perimeter.remove(e);
 		}
-		System.out.println("to be added: " + to_be_added.size());
-		System.out.println("P size before addition: " + perimeter.size());
+		//Add edges to Perimeter that are unique
 		for (int i = 0; i < to_be_added.size(); i ++) {
 			Edge current = to_be_added.get(i);
 			boolean unique = true;
@@ -203,25 +252,125 @@ public class Triangulation {
 				perimeter.add(current);
 			}
 		}
-		System.out.println("Perimeter size after addition: " + perimeter.size());
+		flip();
 	}
 	//Delauney Flip Method
 	public void flip() {
+		ArrayList<Edge> edges = new ArrayList<Edge>(edge_triangles.keySet());
+
+		Boolean done = false; 
+		while (!done) {
+			ArrayList<Edge> ret_edges = new ArrayList<Edge>();
+			for (Edge e : edges) {
+				ArrayList<Edge> to_flip = flip_edge(e);
+				for (Edge e2 : to_flip) {
+					ret_edges.add(e2);
+				}
+			}
+			edges = ret_edges;
+			done = edges.size() == 0;
+		}
 
 	}
-	public void flip_edge(Edge e) {
+	public ArrayList<Edge> flip_edge(Edge e) {
+		ArrayList<Edge> new_edges = new ArrayList<Edge>();
+
 		Triangle[] e_triangles = edge_triangles.get(e);
-		if (e_triangles.length < 2) {
-			return;
+		if (e_triangles == null) {
+			e_triangles = edge_triangles.get(new Edge(e.b, e.a));
+		}
+		if (e_triangles == null) {
+			return new_edges;
+		}
+		if (e_triangles[1] == null) {
+			return new_edges;
 		}
 		//Get two Triangles Edge is part of
 		Triangle tri_a = e_triangles[0];
 		Triangle tri_b = e_triangles[1];
 
-		//Find Vertices opposite the edge for each triangle
-		Vertex opp_a = new Vertex(-1, -1);
-		Vertex opp_b = new Vertex(-1, -1);
+		//Find vertices opposite the edge for each triangle
+		Vertex opp_a = find_opp(tri_a,e);
+		Vertex opp_b = find_opp(tri_b,e);
 
+		//Calculate angles at opposite vertices
+		double angle_a = angle(opp_a, e.a, e.b);
+		double angle_b = angle(opp_b, e.a, e.b);
+		//If sum of angles <= 180, valid trianlge, if not, flip edge
+		if (angle_a + angle_b > 3.1415926536) {
+			//Create new triangles
+			Triangle n_tri_a = new Triangle(opp_a, e.a, opp_b);
+			Triangle n_tri_b = new Triangle(opp_a, opp_b, e.b);
+			to_counterclockwise(n_tri_a);
+			to_counterclockwise(n_tri_b);
+
+			//Add new Triangles
+			triangles.add(n_tri_a);
+			triangles.add(n_tri_b);
+
+			//remove old edge
+			edge_triangles.remove(e);
+			System.out.println("Removed: (" + e.a.x + ", " + e.a.y + ") ----> (" + e.b.x + ", " + e.b.y + ")");
+
+			//add new Edge
+			Triangle[] t = {n_tri_a,n_tri_b};
+			Edge flipped_e = new Edge(opp_a, opp_b);
+			edge_triangles.put(flipped_e,t);
+			System.out.println("Flipped: (" + flipped_e.a.x + ", " + flipped_e.a.y + ") ----> (" + flipped_e.b.x + ", " + flipped_e.b.y + ")");
+
+			//Modify triangle's other edges' edge_triangles
+			ArrayList<Edge> six_edges = new ArrayList<Edge>();
+			six_edges.add(new Edge(n_tri_a.a, n_tri_a.b));
+			six_edges.add(new Edge(n_tri_a.b, n_tri_a.c));
+			six_edges.add(new Edge(n_tri_a.c, n_tri_a.a));
+			six_edges.add(new Edge(n_tri_b.a, n_tri_b.b));
+			six_edges.add(new Edge(n_tri_b.b, n_tri_b.c));
+			six_edges.add(new Edge(n_tri_b.c, n_tri_b.a));
+			for (int i = 0; i < 6; i++) {
+				Edge current = six_edges.get(i);
+				if (! edge_e(flipped_e,current)) {
+					new_edges.add(current);
+					Triangle[] ts = edge_triangles.get(current);
+					if (ts == null) {
+						ts = edge_triangles.get(new Edge(current.b, current.a));
+					}
+					if (ts[0] == null) {
+						System.out.println("No edge Triangle : " + current.a.x + ", " + current.a.y + " -> " + current.b.x + ", " + current.b.y);
+						test_print_edge_to_triangles();
+					}
+					if (edge_in_triange(current, n_tri_a)) {
+						if (ts[0] == tri_a || ts[0] == tri_b) {
+							ts[0] = n_tri_a;
+						} else {
+							ts[1] = n_tri_a;
+						}
+					} else {
+						if (ts[0] == tri_a || ts[0] == tri_b) {
+							ts[0] = n_tri_b;
+						} else {
+							ts[1] = n_tri_b;
+						}
+					}
+				}
+			}
+			//Remove old triangles
+			triangles.remove(tri_a);
+			triangles.remove(tri_b);
+		}
+		return new_edges;
+
+	}
+	//Find the Vertex in the triangle not in the edge
+	public Vertex find_opp(Triangle t, Edge e) {
+		if (vertex_e(t.a, e.a) || vertex_e(t.a, e.b)) {
+			if (vertex_e(t.b, e.a) || vertex_e(t.b, e.b)) {
+				return t.c;
+			} else {
+				return t.b;
+			}
+		} else {
+			return t.a;
+		}
 	}
 	//Radius of the the circumcircle
 	public double circum_radius(Vertex a, Vertex b, Vertex c) {
@@ -244,7 +393,6 @@ public class Triangulation {
 	}
 	//Order Triangle Clockwise
 	public void to_counterclockwise(Triangle t) {
-		System.out.println(area(t.a,t.b,t.c));
 		if (area(t.a,t.b,t.c) < 0) {
 			//Clockwise, swap Vertices a and b
 			Vertex temp = t.a;
@@ -252,6 +400,47 @@ public class Triangulation {
 			t.b = temp;
 		}
 		//Counter, keep as it is;
+	}
+	public double angle(Vertex vertex, Vertex a, Vertex b){
+		Vertex vA = new Vertex((a.x - vertex.x),(a.y - vertex.y));
+		Vertex vB = new Vertex((b.x - vertex.x),(b.y - vertex.y));
+		double cp = area(vertex, a, b);
+		double dp = dot(vA, vB);
+		return Math.abs(Math.atan2(cp,dp));
+	}
+	public boolean edge_in_triange(Edge e, Triangle t) {
+		return (edge_e(e, new Edge(t.a,t.b)) || edge_e(e, new Edge(t.b,t.c)) || edge_e(e, new Edge(t.c,t.a)));
+	}
+	public void test_print_edge_to_triangles() {
+		Set<Edge> test = edge_triangles.keySet();
+		for (Edge e : test) {
+			Triangle[] tris = edge_triangles.get(e);
+			System.out.println("Edge: " + e.a.x + ", " + e.a.y + " -> " + e.b.x + ", " + e.b.y);
+			print_triangle(tris[0]);
+			if (tris[1] != null) {
+				print_triangle(tris[1]);
+			}
+		}
+
+	}
+	public void remove_duplicates() {
+		ArrayList<Vertex> to_be_removed = new ArrayList<Vertex>();
+		for (int i = 0; i < points.size(); i++) {
+			Vertex current = points.get(i);
+			for (int j = 0; j < points.size(); j++) {
+				if (i != j) {
+					if (vertex_e(current, points.get(j))) {
+						to_be_removed.add(current);
+					}
+				}
+			}
+		}
+		for (Vertex v : to_be_removed) {
+			points.remove(v);
+		}
+	}
+	public double dot(Vertex a, Vertex b) {
+		return ((a.x*b.x) + (a.y*b.y));
 	}
 	public double area(Vertex a, Vertex b, Vertex c) {
 		return (b.x-a.x)*(c.y-a.y) - (c.x-a.x)*(b.y-a.y);
@@ -268,24 +457,7 @@ public class Triangulation {
 	public boolean edge_e(Edge a, Edge b) {
 		return ((vertex_e(a.a, b.a) && vertex_e(a.b, b.b)) || (vertex_e(a.b, b.a) && vertex_e(a.a, b.b)));
 	}
-	// Determines whether or not point D lies within the triangle formed be A, B, C
-	// This is done by calculating the determinant of a specific matric defined by
-	// A,B,C, and D's x and y positions. If this determinant is > 0, it lies within.
-	// Futhermore, A, B, and C must be ordered counter-clockwise
-	public boolean within_triangle(Vertex a1, Vertex b1, Vertex c1, Vertex d) {
-		// Assume a1, b1, and c1 are passed in counterclockwise
-		// Matrix Elements
-		int a11 = a1.x - d.x;
-		int a21 = b1.x - d.x;
-		int a31 = c1.x - d.x;
-		int a12 = a1.y - d.y;
-		int a22 = b1.y - d.y;
-		int a32 = c1.y - d.y;
-		double a13 = (Math.pow(a1.x, 2) - Math.pow(d.x, 2)) + (Math.pow(a1.y, 2) - Math.pow(d.y, 2));
-		double a23 = (Math.pow(b1.x, 2) - Math.pow(d.x, 2)) + (Math.pow(b1.y, 2) - Math.pow(d.y, 2));
-		double a33 = (Math.pow(c1.x, 2) - Math.pow(d.x, 2)) + (Math.pow(c1.y, 2) - Math.pow(d.y, 2));
-		// Calculate Determinant 
-		double det = a11*((a22*a33)-(a23*a32)) - a12*((a21*a33)-(a23*a31)) + a13*((a21*a32)-(a22*a31)); 
-		return (det > 0);
+	public void print_triangle(Triangle t) {
+		System.out.println("(" + t.a.x + ", " + t.a.y + ") " + " (" + t.b.x + ", " + t.b.y + ") "+ "(" + t.c.x + ", " + t.c.y + ") ");
 	}
 }

@@ -39,6 +39,7 @@ public class Priority_Points {
 		//Break Image into Blocks. Find point of highest 
 		int wb = (int) pixels.length / 12;
 		int hb = (int) pixels[0].length / 12;
+		int blocks = 0;
 		for (int i = 0; i < pixels.length; i = i + wb) {
 			for (int j = 0; j < pixels[0].length; j = j + hb) {
 
