@@ -25,15 +25,13 @@ public class Triangulation {
 	//Utilizing flip alogorithm
 	//With furter Inspiration from Alexander Pletzer's code on Triangulation in Python
 
-	HashMap<int,Triangle> triangles;
+	ArrayList<Triangle> triangles;
 	ArrayList<Vertex> points;
 	ArrayList<Edge> perimeter;
-	HashMap<Edge,int[]> edge_triangles;
+	HashMap<Edge,Integer[]> edge_triangles;
 
 	Vertex seed;
 	Vertex c; 
-
-	int index;
 
 	//Intialize points and create data structure to hold Triangles. 
 	public Triangulation(int[][] p, int h){
@@ -49,7 +47,7 @@ public class Triangulation {
 		c = new Vertex(-1,-1);
 		triangles = new ArrayList<Triangle>();
 		perimeter = new ArrayList<Edge>();
-		edge_triangles = new HashMap<Edge, Triangle[]>();
+		edge_triangles = new HashMap<Edge, Integer[]>();
 	}
 
 	//########## STRUCTURES ##########//
@@ -167,8 +165,8 @@ public class Triangulation {
 		perimeter.add(e_c);
 
 		//Intialize their Edge-> triangles arrays
-		Triangle[] first_a = new Triangle[2];
-		first_a[0] = first;
+		Integer[] first_a = new Integer[2];
+		first_a[0] = 0;
 		edge_triangles.put(e_a, first_a);
 		edge_triangles.put(e_b, first_a.clone());
 		edge_triangles.put(e_c, first_a.clone());
@@ -184,7 +182,7 @@ public class Triangulation {
 		points.remove(xj);
 
 		//Add Verticies to triangulation
-		for(int i = 0; i < 21; i++) {
+		for(int i = 0; i < points.size(); i++) {
 			System.out.println(points.get(i).x + ", " + points.get(i).y);
 			add_vertex(points.get(i));
 		}
@@ -210,10 +208,11 @@ public class Triangulation {
 				Triangle n_tri = new Triangle(e.a, e.b, p);
 				to_counterclockwise(n_tri);
 				triangles.add(n_tri);
+				Integer triangle_index = triangles.size() - 1;
 
 				//update the already existing edge to have the new triangle;
-				Triangle[] array = edge_triangles.get(e);
-				array[1] = n_tri;
+				Integer[] array = edge_triangles.get(e);
+				array[1] = triangle_index;
 				edge_triangles.put(e, array);
 
 				//update perimeter
@@ -223,10 +222,10 @@ public class Triangulation {
 				to_be_added.add(e_b);
 
 				//Intialize their triangles 
-				Triangle[] e_a_array = new Triangle[2];
-				Triangle[] e_b_array = new Triangle[2];
-				e_a_array[0] = n_tri;
-				e_b_array[0] = n_tri;
+				Integer[] e_a_array = new Integer[2];
+				Integer[] e_b_array = new Integer[2];
+				e_a_array[0] = triangle_index;
+				e_b_array[0] = triangle_index;
 				edge_triangles.put(e_a, e_a_array);
 				edge_triangles.put(e_b, e_b_array);
 				System.out.println("Added: (" + e_a.a.x + ", " + e_a.a.y + ") ----> (" + e_a.b.x + ", " + e_a.b.y + ")");
@@ -278,16 +277,18 @@ public class Triangulation {
 	public ArrayList<Edge> flip_edge(Edge e) {
 		ArrayList<Edge> new_edges = new ArrayList<Edge>();
 
-		Triangle[] e_triangles = edge_triangles.get(e);
+		Integer[] e_triangles = edge_triangles.get(e);
 		if (e_triangles == null) {
 			e_triangles = edge_triangles.get(new Edge(e.b, e.a));
 		}
-		if (e_triangles == null || e_triangles[0] == null || e_triangles[1] == null) {
+		if (e_triangles == null || e_triangles[1] == null) {
 			return new_edges;
 		}
 		//Get two Triangles Edge is part of
-		Triangle tri_a = e_triangles[0];
-		Triangle tri_b = e_triangles[1];
+		Integer index_a = e_triangles[0];
+		Integer index_b = e_triangles[1];
+		Triangle tri_a = triangles.get(index_a);
+		Triangle tri_b = triangles.get(index_b);
 
 		//Find vertices opposite the edge for each triangle
 		Vertex opp_a = find_opp(tri_a,e);
@@ -301,68 +302,53 @@ public class Triangulation {
 			//Create new triangles
 			Triangle n_tri_a = new Triangle(opp_a, e.a, opp_b);
 			Triangle n_tri_b = new Triangle(opp_a, opp_b, e.b);
-			to_counterclockwise(n_tri_a);
-			to_counterclockwise(n_tri_b);
 
-			//Add new Triangles
-			triangles.add(n_tri_a);
-			triangles.add(n_tri_b);
+			//Replace old triangles with new ones
+			triangles.set((int)index_a, n_tri_a);
+			triangles.set((int)index_b, n_tri_b);
 
 			//remove old edge
 			edge_triangles.remove(e);
 			System.out.println("Removed: (" + e.a.x + ", " + e.a.y + ") ----> (" + e.b.x + ", " + e.b.y + ")");
 
 			//add new Edge
-			Triangle[] t = {n_tri_a,n_tri_b};
 			Edge flipped_e = new Edge(opp_a, opp_b);
-			edge_triangles.put(flipped_e,t);
+			Integer[] tris =  {index_a, index_b};
+			edge_triangles.put(flipped_e, tris);
 			System.out.println("Flip Added: (" + flipped_e.a.x + ", " + flipped_e.a.y + ") ----> (" + flipped_e.b.x + ", " + flipped_e.b.y + ")");
 
 			//Modify triangle's other edges' edge_triangles
-			ArrayList<Edge> six_edges = new ArrayList<Edge>();
-			six_edges.add(new Edge(n_tri_a.a, n_tri_a.b));
-			six_edges.add(new Edge(n_tri_a.b, n_tri_a.c));
-			six_edges.add(new Edge(n_tri_a.c, n_tri_a.a));
-			six_edges.add(new Edge(n_tri_b.a, n_tri_b.b));
-			six_edges.add(new Edge(n_tri_b.b, n_tri_b.c));
-			six_edges.add(new Edge(n_tri_b.c, n_tri_b.a));
-			for (int i = 0; i < 6; i++) {
-				Edge current = six_edges.get(i);
-				if (!edge_e(flipped_e,current)) {
-					new_edges.add(current);
-					Triangle[] ts = edge_triangles.get(current);
-					if (ts == null) {
-						ts = edge_triangles.get(new Edge(current.b, current.a));
-					}
-					if (ts == null) {
-						System.out.println("No edge Triangle : " + current.a.x + ", " + current.a.y + " -> " + current.b.x + ", " + current.b.y);
-						System.out.println("New");
-						print_triangle(n_tri_a);
-						print_triangle(n_tri_b);
-						System.out.println("Old");
-						print_triangle(tri_a);
-						print_triangle(tri_b);
-					}
-					if (edge_in_triange(current, n_tri_a)) {
-						if (ts[0] == tri_a || ts[0] == tri_b) {
-							ts[0] = n_tri_a;
-						} else {
-							ts[1] = n_tri_a;
-						}
-					} else {
-						if (ts[0] == tri_a || ts[0] == tri_b) {
-							ts[0] = n_tri_b;
-						} else {
-							ts[1] = n_tri_b;
-						}
-					}
-					edge_triangles.put(current,ts);
+			Edge a = new Edge(opp_a,e.b);
+			Integer[] mod_a = edge_triangles.get(a);
+			if (mod_a == null) {
+				mod_a = edge_triangles.get(new Edge(e.b, opp_a));
+			}
+			for (int i = 0; i < 2; i++) {
+				if (mod_a[i] == index_a) {
+					mod_a[i] = index_b;
 				}
 			}
-			//Remove old triangles
-			triangles.remove(tri_a);
-			triangles.remove(tri_b);
-		}
+			new_edges.add(a);
+
+			Edge b = new Edge(opp_b, e.a);
+			Integer[] mod_b = edge_triangles.get(b);
+			if (mod_b == null) {
+				mod_b = edge_triangles.get(new Edge(e.a, opp_b));
+			}
+			if (mod_b == null) {
+				System.out.println("EDGE MISSING: (" + b.a.x + ", " + b.a.y + ") ----> (" + b.b.x + ", " + b.b.y + ")");
+				test_print_edge_to_triangles();
+			}
+			for (int i = 0; i < 2; i++) {
+				if (mod_b[i] == index_b) {
+					mod_b[i] = index_a;
+				}
+			}
+			new_edges.add(b);
+
+			new_edges.add(new Edge(opp_a,e.a));
+			new_edges.add(new Edge(opp_b,e.b));
+			}
 		return new_edges;
 
 	}
@@ -420,11 +406,11 @@ public class Triangulation {
 	public void test_print_edge_to_triangles() {
 		Set<Edge> test = edge_triangles.keySet();
 		for (Edge e : test) {
-			Triangle[] tris = edge_triangles.get(e);
+			Integer[] tris = edge_triangles.get(e);
 			System.out.println("Edge: " + e.a.x + ", " + e.a.y + " -> " + e.b.x + ", " + e.b.y);
-			print_triangle(tris[0]);
+			print_triangle(triangles.get(tris[0]));
 			if (tris[1] != null) {
-				print_triangle(tris[1]);
+				print_triangle(triangles.get(tris[1]));
 			}
 		}
 
