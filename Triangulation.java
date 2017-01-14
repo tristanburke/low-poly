@@ -2,7 +2,7 @@
  * Takes a set of priority points and creates a triangulation from points and returns image
  * 
  * @author 	Tristan Burke
- * @version	2.1 - Jan 5, 2016
+ * @version	3.1 - Jan 12, 2016
  * 
 **/
 
@@ -21,7 +21,7 @@ import java.util.HashSet;
 	
 public class Triangulation {
 	//Perform a triangulation using S-hull: a fast radial sweep-hull routine for Delaunay triangulation
-	//source -> http://www.s-hull.org/paper/s_hull.pdf
+	//source of algorithm -> http://www.s-hull.org/paper/s_hull.pdf
 	//Utilizing flip alogorithm
 	//With furter Inspiration from Alexander Pletzer's code on Triangulation in Python
 
@@ -30,21 +30,37 @@ public class Triangulation {
 	ArrayList<Edge> perimeter;
 	HashMap<Edge,Integer[]> edge_triangles;
 
+	Vertex cg;
 	Vertex seed;
-	Vertex c; 
+	Vertex hole;
+
+	int width;
+	int height;
+	BufferedImage image;
 
 	//Intialize points and create data structure to hold Triangles. 
-	public Triangulation(int[][] p, int h){
+	public Triangulation(int[][] p, int h, int w, BufferedImage img){
+		width = w;
+		height = h;
+		image = img;
+
 		//Convert int[][] to ArrayList of Verticies;
 		points = new ArrayList<Vertex>();
 		for (int i = 0; i < p.length; i++) {
 			points.add(new Vertex(p[i][1], (h - 1 - p[i][0])));
 		}
+		//Add four corners of image to points
+		points.add(new Vertex(0,0));
+		points.add(new Vertex(0,h-1));
+		points.add(new Vertex(w-1,0));
+		points.add(new Vertex(w-1,h-1));
+		//Removed duplicate points
 		remove_duplicates();
 
 		//Initalize Variables
+		cg = new Vertex(-1, -1);
 		seed = new Vertex(-1,-1);
-		c = new Vertex(-1,-1);
+		hole = new Vertex(-1, -1);
 		triangles = new ArrayList<Triangle>();
 		perimeter = new ArrayList<Edge>();
 		edge_triangles = new HashMap<Edge, Integer[]>();
@@ -76,7 +92,12 @@ public class Triangulation {
 		public int hashCode(){
 			return x * 31 + y;
 		}
-
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			return vertex_e(this, (Vertex) o);
+		}
 	}
 	//Representing a triangle edge between two Vertices 
 	public class Edge{
@@ -101,11 +122,11 @@ public class Triangulation {
 			return result;
 		}
 	}
-	public class C_comp implements Comparator<Vertex> {
+	public class Hole_comp implements Comparator<Vertex> {
 		@Override
 		public int compare(Vertex a, Vertex b) {
-			double a1 = Math.pow(distance(a, c),2);
-			double b1 = Math.pow(distance(b, c),2);
+			double a1 = Math.pow(distance(a, hole),2);
+			double b1 = Math.pow(distance(b, hole),2);
 			if (a1 < b1) {
 				return -1;
 			} else if (b1 < a1) {
@@ -117,8 +138,8 @@ public class Triangulation {
 	public class Point_comp implements Comparator<Vertex> {
 		@Override
 		public int compare(Vertex a, Vertex b) {
-			double a1 = Math.pow(distance(a, seed),2);
-			double b1 = Math.pow(distance(b, seed),2);
+			double a1 = Math.pow(distance(a, cg),2);
+			double b1 = Math.pow(distance(b, cg),2);
 			if (a1 < b1) {
 				return -1;
 			} else if (b1 < a1) {
@@ -133,13 +154,12 @@ public class Triangulation {
 	// Pick Seed point, then using seed point, pick xk and xj. Then using new triangle, find point C and order
 	// the rest of points acording to distance from c. Finally, create triangulation using add_vertex for each point
 	public ArrayList<Triangle> triangulate() {
-		//randomly select seed point
-		//Tesing sort
-		seed = points.get((int) points.size() / 2);
-		
-		//Sort in distance closest to seed
+
+		//Compute center of points. Pick seed as closed to center. 
+		compute_center();
 		Comparator<Vertex> comp = new Point_comp();
-		Collections.sort(points,comp);
+		Collections.sort(points, comp);
+		seed = points.get(0);
 
 		//Find initial Triangle with smallest circle
 		Vertex xk = points.get(1);
@@ -171,31 +191,18 @@ public class Triangulation {
 		edge_triangles.put(e_b, first_a.clone());
 		edge_triangles.put(e_c, first_a.clone());
 
-		//Find center of first triangles circumcirlce which will be used to sort remaining points
-		// c = circum_center(seed,xk,xj);
-		// System.out.println("C point: " + c.x + ",  " +  c.y);
-		
-		// Comparator<Vertex> c_comp = new C_comp();
-		// Collections.sort(points,c_comp);
 		points.remove(seed);
 		points.remove(xk);
 		points.remove(xj);
 
 		//Add Verticies to triangulation
 		for(int i = 0; i < points.size(); i++) {
-			System.out.println(points.get(i).x + ", " + points.get(i).y);
 			add_vertex(points.get(i));
 		}
+		flip();
 		return triangles;
 	}
-	// public void test(){
-	// 	Vertex a = new Vertex(0,0);
-	// 	Vertex b = new Vertex(10, 0);
-	// 	Vertex c = new Vertex(0,5);
-	// 	System.out.println(angle(a,b,c));
-	// 	System.out.println(angle(b,c,a));
-	// 	System.out.println(angle(c,a,b));
-	// }
+
 	//Add One Vertex to existing Delauney Triangulation, with array of Triangle
 	public void add_vertex(Vertex p) {
 
@@ -228,8 +235,7 @@ public class Triangulation {
 				e_b_array[0] = triangle_index;
 				edge_triangles.put(e_a, e_a_array);
 				edge_triangles.put(e_b, e_b_array);
-				System.out.println("Added: (" + e_a.a.x + ", " + e_a.a.y + ") ----> (" + e_a.b.x + ", " + e_a.b.y + ")");
-				System.out.println("Added: (" + e_b.a.x + ", " + e_b.a.y + ") ----> (" + e_b.b.x + ", " + e_b.b.y + ")");
+
 				//remove visible edge
 				to_be_removed.add(e);
 			}
@@ -309,13 +315,11 @@ public class Triangulation {
 
 			//remove old edge
 			edge_triangles.remove(e);
-			System.out.println("Removed: (" + e.a.x + ", " + e.a.y + ") ----> (" + e.b.x + ", " + e.b.y + ")");
 
 			//add new Edge
 			Edge flipped_e = new Edge(opp_a, opp_b);
 			Integer[] tris =  {index_a, index_b};
 			edge_triangles.put(flipped_e, tris);
-			System.out.println("Flip Added: (" + flipped_e.a.x + ", " + flipped_e.a.y + ") ----> (" + flipped_e.b.x + ", " + flipped_e.b.y + ")");
 
 			//Modify triangle's other edges' edge_triangles
 			Edge a = new Edge(opp_a,e.b);
@@ -323,9 +327,11 @@ public class Triangulation {
 			if (mod_a == null) {
 				mod_a = edge_triangles.get(new Edge(e.b, opp_a));
 			}
-			for (int i = 0; i < 2; i++) {
-				if (mod_a[i] == index_a) {
-					mod_a[i] = index_b;
+			if (mod_a != null) {
+				for (int i = 0; i < 2; i++) {
+					if (mod_a[i] == index_a) {
+						mod_a[i] = index_b;
+					}
 				}
 			}
 			new_edges.add(a);
@@ -336,7 +342,6 @@ public class Triangulation {
 				mod_b = edge_triangles.get(new Edge(e.a, opp_b));
 			}
 			if (mod_b == null) {
-				System.out.println("EDGE MISSING: (" + b.a.x + ", " + b.a.y + ") ----> (" + b.b.x + ", " + b.b.y + ")");
 				test_print_edge_to_triangles();
 			}
 			for (int i = 0; i < 2; i++) {
@@ -351,6 +356,51 @@ public class Triangulation {
 			}
 		return new_edges;
 
+	}
+	//Find all the uncovered vertices
+	public ArrayList<Vertex> find_empty_vertices() {
+		ArrayList<Vertex> uncovered = new ArrayList<Vertex>();
+		BufferedImage test = Low_poly.copy(image);
+		Graphics2D g2d = test.createGraphics();
+     	g2d.setColor(new Color(0,0,0));
+        BasicStroke bs = new BasicStroke(2);
+        g2d.setStroke(bs);
+
+       	for (Triangle t: triangles) {
+      		int ax = t.a.x;
+      		int ay = -t.a.y + height - 1;
+      		int bx = t.b.x;
+      		int by = -t.b.y + height - 1;;  
+      		int cx = t.c.x;
+      		int cy = -t.c.y + height - 1;;  
+
+      		int[] xpoints = {ax, bx, cx};
+      		int[] ypoints = {ay, by, cy};
+      		g2d.fillPolygon(xpoints, ypoints, 3);		
+      	}
+      	Low_poly.save(test, "Holes");
+      	for (int i = 0; i < width; i++) {
+      		for (int j = 0; j < height; j++) {
+      			if (test.getRGB(i,j) != -16777216) {
+      				uncovered.add(new Vertex(i, height - 1 - j));
+      			}
+      		}
+      	}
+		return uncovered;
+	}
+	//Find if three vertices are a triangle already accounted for 
+	public boolean a_triangle(Vertex a, Vertex b, Vertex c) {
+		for (Triangle t : triangles) {
+			if (vertex_e(a,t.a) && vertex_e(b,t.b) && vertex_e(c,t.c) ||
+				vertex_e(a,t.a) && vertex_e(b,t.c) && vertex_e(c,t.b) ||
+				vertex_e(a,t.b) && vertex_e(b,t.a) && vertex_e(c,t.c) ||
+				vertex_e(a,t.b) && vertex_e(b,t.c) && vertex_e(c,t.a) ||
+				vertex_e(a,t.c) && vertex_e(b,t.a) && vertex_e(c,t.b) ||
+				vertex_e(a,t.c) && vertex_e(b,t.b) && vertex_e(c,t.a) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 	//Find the Vertex in the triangle not in the edge
 	public Vertex find_opp(Triangle t, Edge e) {
@@ -371,17 +421,6 @@ public class Triangulation {
 		double c1 = distance(c,a);
 		double s = (a1 + b1 + c1) / 2;
 		return (a1*b1*c1) / (4*Math.sqrt(s*(s-a1)*(s-b1)*(s-c1)));
-	}
-	//Center of the circumcirlcles
-	public Vertex circum_center(Vertex a, Vertex b, Vertex c) {
-		Vertex mid_ab = new Vertex((a.x + b.x)/2, (a.y + b.y)/2);
-		Vertex mid_bc = new Vertex((b.x + c.x)/2, (b.y + c.y)/2);
-		double sl_ab =  -1 /((double)(b.y - a.y) / (double)(b.x - a.x));
-		double sl_bc =  -1 /((double)(c.y - b.y) / (double)(c.x - b.x));
-		//y= sl_ab*x - sl_ab*midab.x + mid_ab.y 
-		double x = ((double)((sl_bc*mid_bc.x) + mid_bc.y - mid_ab.y - (sl_ab*mid_ab.x))) / (double)(sl_ab - sl_bc);
-		double y = sl_ab*x + sl_ab*mid_ab.x + mid_ab.y;
-		return new Vertex((int)x,(int)y);
 	}
 	//Order Triangle Clockwise
 	public void to_counterclockwise(Triangle t) {
@@ -430,6 +469,25 @@ public class Triangulation {
 		for (Vertex v : to_be_removed) {
 			points.remove(v);
 		}
+	}
+	public void compute_center() {
+		int all_x = 0;
+		int all_y = 0;
+		for (int i = 0; i < points.size(); i++) {
+			all_x += points.get(i).x;
+			all_y += points.get(i).y;
+		}
+		cg = new Vertex((int) all_x / points.size(), (int) all_y / points.size());
+	}	
+	public float sign (Vertex p1, Vertex p2, Vertex p3) {
+    	return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+	}
+	public boolean inTriangle (Vertex pt, Vertex v1, Vertex v2, Vertex v3) {
+		boolean b1 = sign(pt, v1, v2) < 0.0f;
+    	boolean b2 = sign(pt, v2, v3) < 0.0f;
+    	boolean b3 = sign(pt, v3, v1) < 0.0f;
+
+    	return ((b1 == b2) && (b2 == b3));
 	}
 	public double dot(Vertex a, Vertex b) {
 		return ((a.x*b.x) + (a.y*b.y));

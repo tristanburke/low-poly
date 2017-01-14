@@ -61,9 +61,9 @@ public class Low_poly {
       	// Triangulate
 
         //Testing set of points 
-        int[][] practice_points = {{0,0},{100,100},{200,200},{0,100},{50, 250},{100,70},{300,150},{150,0},{40,450},{500,60},{370,250},{350,240},{400,500},{500,600},{2000,1000},{1500,1200},{2300,450}};
-      	Triangulation t = new Triangulation(points,height);
+      	Triangulation t = new Triangulation(points,height,width, image);
       	ArrayList<Triangulation.Triangle> triangles = t.triangulate();
+      	ArrayList<Triangulation.Vertex> uncovered = t.find_empty_vertices();
 
      	//Test triangles 
      	System.out.println("Number of Triangles: " + triangles.size());
@@ -82,10 +82,31 @@ public class Low_poly {
       		int cx = current.c.x;
       		int cy = -current.c.y + height - 1;;  
 
+      		int random = (int)(Math.random() * 250 + 1);
+
+      		int[] xpoints = {ax, bx, cx};
+      		int[] ypoints = {ay, by, cy};
+      		g2d.setColor(new Color(0, 0, random));
+      		g2d.fillPolygon(xpoints, ypoints, 3);
+
       		g2d.drawLine(ax, ay, bx, by);
       		g2d.drawLine(bx, by, cx, cy);
       		g2d.drawLine(cx, cy, ax, ay);
    			
+      	}
+      	//color holes
+      	Triangulation.Vertex last = uncovered.get(0);
+      	int color = 0;
+      	for (int i = 1; i < uncovered.size(); i++) {
+      		Triangulation.Vertex current = uncovered.get(i);
+      		if (current.x - last.x > 2 && current.y - last.y > 2) {
+      			color = color + i;
+      			t_image.setRGB(current.x, -current.y + height - 1, color);
+      		} else {
+      			t_image.setRGB(current.x, -current.y + height - 1, color);
+      		}
+      		last = current;
+
       	}
       	save(t_image , "Triangles");
 
