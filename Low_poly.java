@@ -86,7 +86,7 @@ public class Low_poly {
 
       		int[] xpoints = {ax, bx, cx};
       		int[] ypoints = {ay, by, cy};
-      		g2d.setColor(new Color(0, 0, random));
+      		g2d.setColor(new Color(255 - random,0,random));
       		g2d.fillPolygon(xpoints, ypoints, 3);
 
       		g2d.drawLine(ax, ay, bx, by);
@@ -112,6 +112,7 @@ public class Low_poly {
 
       	//Draw Finished Image
 	}
+
 	public static void color_test(BufferedImage source, int x, int y, int color, int width, int height) {
 		source.setRGB(x, y, color);
   		if (x < width-1) {
